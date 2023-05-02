@@ -1,0 +1,19 @@
+[package]
+authors = ["Haruki Obuchi <dev@mail.nyarn.wtf>"]
+name = "EnvMoni"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wio_terminal = "0.3"
+panic-halt = "0.2"
+cortex-m = "0.6.4"
+cortex-m-rt = "0.6.13"
+nb = "0.1"
+accelerometer = "0.12.0"
+embedded-graphics = "0.6.2"
+heapless = "0.5.6"
+scd30 = "0.3.0"
+
+[features]
+
