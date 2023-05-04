@@ -60,19 +60,17 @@ fn main() -> ! {
 
     // I2Cドライバオブジェクトを初期化する
     let gclk0 = &clocks.gclk0();
-    let mut i2c: I2CMaster3<
+    let i2c: I2CMaster3<
         Sercom3Pad0<Pa17<PfD>>,
         Sercom3Pad1<Pa16<PfD>>,
     > = I2CMaster3::new(
         &clocks.sercom3_core(&gclk0).unwrap(),
-        400.khz(),
+        50.khz(),
         peripherals.SERCOM3,
         &mut peripherals.MCLK,
         sets.grove_i2c.sda.into_pad(&mut sets.port),
         sets.grove_i2c.scl.into_pad(&mut sets.port),
     );
-
-
 
     let style = PrimitiveStyleBuilder::new()
         .fill_color(Rgb565::BLACK)
@@ -85,15 +83,51 @@ fn main() -> ! {
     // Connect to sensor
     let mut scd = Scd30::new_with_address(i2c, 0x61);
 
-    if let Err(x) = scd.set_measurement_interval(1) {
+    delay.delay_ms(100u16);
+
+    if let Err(x) = scd.stop_measuring() {
         loop {
+            let style = TextStyleBuilder::new(Font12x16)
+                .text_color(Rgb565::GREEN)
+                .background_color(Rgb565::BLACK)
+                .build();
+
             writeln!(&mut serial, "Err").unwrap();
+            Text::new("Error2", Point::new(10, 40))
+                .into_styled(style)
+                .draw(&mut display).unwrap();
         }
     }
 
-    if let Err(x) = scd.start_measuring() {
+    delay.delay_ms(100u16);
+
+    if let Err(x) = scd.set_measurement_interval(1) {
+        let style = TextStyleBuilder::new(Font12x16)
+            .text_color(Rgb565::GREEN)
+            .background_color(Rgb565::BLACK)
+            .build();
+
         loop {
             writeln!(&mut serial, "Err").unwrap();
+            Text::new("Error3", Point::new(10, 40))
+                .into_styled(style)
+                .draw(&mut display).unwrap();
+        }
+    }
+
+    delay.delay_ms(100u16);
+
+    if let Err(x) = scd.start_measuring() {
+        let style = TextStyleBuilder::new(Font12x16)
+            .text_color(Rgb565::GREEN)
+            .background_color(Rgb565::BLACK)
+            .build();
+
+        loop {
+            writeln!(&mut serial, "Err").unwrap();
+            Text::new("Error4", Point::new(10, 40))
+                .into_styled(style)
+                .draw(&mut display).unwrap();
         }
     }
 
@@ -101,6 +135,13 @@ fn main() -> ! {
         .text_color(Rgb565::GREEN)
         .background_color(Rgb565::BLACK)
         .build();
+
+    let alm_style = TextStyleBuilder::new(Font12x16)
+        .text_color(Rgb565::RED)
+        .background_color(Rgb565::BLACK)
+        .build();
+
+    delay.delay_ms(100u16);
 
     loop {
         Text::new("Temperature", Point::new(10, 10))
@@ -127,7 +168,7 @@ fn main() -> ! {
             .into_styled(TextStyle::new(Font12x16, Rgb565::WHITE))
             .draw(&mut display).unwrap();
 
-        let mut data = scd.read().unwrap().unwrap();
+        let data = scd.read().unwrap().unwrap();
         writeln!(&mut serial, "CO2: {}, TEMP: {}, HUM: {}\r\n", data.co2, data.temperature, data.humidity).unwrap();
 
         let mut co2_label = String::<U256>::new();
@@ -146,11 +187,17 @@ fn main() -> ! {
             .into_styled(style)
             .draw(&mut display).unwrap();
 
-        Text::new(&mut co2_label, Point::new(10, 160))
-            .into_styled(style)
-            .draw(&mut display).unwrap();
-
-        delay.delay_ms(10000u16);
+        if data.co2 < 2000f32 {
+            Text::new(&mut co2_label, Point::new(10, 160))
+                .into_styled(style)
+                .draw(&mut display).unwrap();
+        } else {
+            Text::new(&mut co2_label, Point::new(10, 160))
+                .into_styled(alm_style)
+                .draw(&mut display).unwrap();
+        }
+        delay.delay_ms(5000u16);
         background.draw(&mut display).unwrap();
+
     }
 }
